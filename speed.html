@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ookla Speedtest Process Animation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            animation: slideDown 1s ease-out;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .controls {
+            text-align: center;
+            margin-bottom: 30px;
+            animation: slideUp 1s ease-out 0.5s both;
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            border: none;
+            padding: 12px 25px;
+            margin: 0 10px;
+            border-radius: 25px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
+        .btn.secondary {
+            background: linear-gradient(45deg, #4834d4, #686de0);
+        }
+        
+        .phase-container {
+            margin: 20px 0;
+            opacity: 0;
+            transform: translateX(-100px);
+            transition: all 0.8s ease;
+        }
+        
+        .phase-container.active {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .phase {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        
+        .phase-title {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .phase-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            animation: pulse 2s infinite;
+        }
+        
+        .network-diagram {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .server-card {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            transition: all 0.5s ease;
+            border: 2px solid transparent;
+        }
+        
+        .server-card.selected {
+            border-color: #feca57;
+            box-shadow: 0 0 20px rgba(254, 202, 87, 0.5);
+            transform: scale(1.05);
+        }
+        
+        .server-card.testing {
+            animation: testing 1s ease-in-out infinite alternate;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .metric-card {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .api-request {
+            background: rgba(0, 0, 0, 0.3);
+            border-left: 4px solid #feca57;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            opacity: 0;
+            transform: translateX(-20px);
+            transition: all 0.5s ease;
+        }
+        
+        .api-request.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .timeline {
+            position: relative;
+            margin: 20px 0;
+        }
+        
+        .timeline-item {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+            opacity: 0.3;
+            transition: all 0.5s ease;
+        }
+        
+        .timeline-item.active {
+            opacity: 1;
+        }
+        
+        .timeline-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #feca57;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        
+        .hidden { display: none; }
+        
+        .phase-1 .phase-icon { background: linear-gradient(45deg, #ff9a9e, #fecfef); }
+        .phase-2 .phase-icon { background: linear-gradient(45deg, #a8edea, #fed6e3); }
+        .phase-3 .phase-icon { background: linear-gradient(45deg, #ffecd2, #fcb69f); }
+        .phase-4 .phase-icon { background: linear-gradient(45deg, #ff8a80, #ffb3ba); }
+        .phase-5 .phase-icon { background: linear-gradient(45deg, #84fab0, #8fd3f4); }
+        
+        .results-summary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .final-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .speed-gauge {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto;
+            position: relative;
+        }
+        
+        .gauge-bg {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: conic-gradient(from 0deg, #ff6b6b 0%, #feca57 50%, #48dbfb 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .gauge-center {
+            width: 80%;
+            height: 80%;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+        }
+        
+        @keyframes slideDown {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        @keyframes testing {
+            0% { box-shadow: 0 0 10px rgba(254, 202, 87, 0.3); }
+            100% { box-shadow: 0 0 25px rgba(254, 202, 87, 0.8); }
+        }
+    </style>
+    
+    <script>
+        // Global variables
+        let currentPhase = 0;
+        let autoplay = true;
+        let animationInterval;
+        
+        const servers = [
+            { id: '71028', name: 'Telkomsel', latency: 6.78, selected: true },
+            { id: '61645', name: 'BarokahNet', latency: 6.83 },
+            { id: '48473', name: 'PT. Cahaya Solusindo', latency: 7.20 },
+            { id: '70700', name: 'Validatech', latency: 7.76 },
+            { id: '61063', name: 'Rapid Network', latency: 8.05 },
+            { id: '59066', name: 'TELKOMSAT', latency: 8.19 },
+            { id: '53904', name: 'ZEUSS', latency: 8.52 },
+            { id: '54348', name: 'PT. Adi Inti Mandiri', latency: 8.56 },
+            { id: '56815', name: 'PT. Qwords', latency: 9.59 },
+            { id: '63955', name: 'YESNET', latency: 9.99 },
+            { id: '20264', name: 'Skyline', latency: 10.18 }
+        ];
+        
+        // Define all functions at the top level
+        function showPhase(phaseNum) {
+            // Hide all phases
+            document.querySelectorAll('.phase-container').forEach(phase => {
+                phase.classList.add('hidden');
+                phase.classList.remove('active');
+            });
+            
+            // Show current phase
+            if (phaseNum > 0) {
+                const currentPhaseElement = document.getElementById('phase-' + phaseNum);
+                if (currentPhaseElement) {
+                    currentPhaseElement.classList.remove('hidden');
+                    setTimeout(() => {
+                        currentPhaseElement.classList.add('active');
+                    }, 100);
+                }
+            }
+            
+            currentPhase = phaseNum;
+            updateNavigationButtons();
+        }
+        
+        function nextPhase() {
+            if (currentPhase < 5) {
+                clearInterval(animationInterval);
+                currentPhase++;
+                showPhase(currentPhase);
+                
+                // Trigger phase-specific animations
+                switch(currentPhase) {
+                    case 1: animatePhase1(); break;
+                    case 2: animatePhase2(); break;
+                    case 3: animatePhase3(); break;
+                    case 4: animatePhase4(); break;
+                    case 5: animatePhase5(); break;
+                }
+            }
+        }
+        
+        function previousPhase() {
+            if (currentPhase > 1) {
+                clearInterval(animationInterval);
+                currentPhase--;
+                showPhase(currentPhase);
+                
+                // Trigger phase-specific animations
+                switch(currentPhase) {
+                    case 1: animatePhase1(); break;
+                    case 2: animatePhase2(); break;
+                    case 3: animatePhase3(); break;
+                    case 4: animatePhase4(); break;
+                    case 5: animatePhase5(); break;
+                }
+            }
+        }
+        
+        function updateNavigationButtons() {
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const phaseCounter = document.getElementById('phaseCounter');
+            
+            if (!prevBtn || !nextBtn || !phaseCounter) return; // Safety check
+            
+            prevBtn.disabled = currentPhase <= 1;
+            nextBtn.disabled = currentPhase >= 5;
+            phaseCounter.textContent = currentPhase;
+            
+            // Update button text based on phase
+            if (currentPhase >= 5) {
+                nextBtn.textContent = '✅ Complete';
+            } else {
+                nextBtn.textContent = '➡️ Next Phase';
+            }
+        }
+        
+        function startAnimation() {
+            currentPhase = 1;
+            showPhase(1);
+            animatePhase1();
+            
+            if (autoplay) {
+                clearInterval(animationInterval);
+                animationInterval = setInterval(() => {
+                    if (currentPhase < 5) {
+                        nextPhase();
+                    } else {
+                        clearInterval(animationInterval);
+                    }
+                }, 5000);
+            }
+        }
+        
+        function resetAnimation() {
+            clearInterval(animationInterval);
+            currentPhase = 0;
+            document.querySelectorAll('.phase-container').forEach(phase => {
+                phase.classList.add('hidden');
+                phase.classList.remove('active');
+            });
+            
+            // Reset all animations
+            document.querySelectorAll('.api-request').forEach(req => {
+                req.classList.remove('show');
+            });
+            
+            document.querySelectorAll('.progress-fill').forEach(bar => {
+                bar.style.width = '0%';
+            });
+            
+            updateNavigationButtons();
+        }
+        
+        function toggleAutoplay() {
+            autoplay = !autoplay;
+            const btn = document.getElementById('autoplayBtn');
+            if (btn) {
+                btn.textContent = autoplay ? '⏸️ Pause Auto' : '▶️ Play Auto';
+            }
+            
+            if (autoplay && currentPhase > 0 && currentPhase < 5) {
+                clearInterval(animationInterval);
+                animationInterval = setInterval(() => {
+                    if (currentPhase < 5) {
+                        nextPhase();
+                    } else {
+                        clearInterval(animationInterval);
+                    }
+                }, 5000);
+            } else {
+                clearInterval(animationInterval);
+            }
+        }
+        
+        function initializeServers() {
+            const serversGrid = document.getElementById('servers-grid');
+            if (!serversGrid) return;
+            
+            serversGrid.innerHTML = '';
+            
+            servers.forEach(server => {
+                const serverCard = document.createElement('div');
+                serverCard.className = 'server-card';
+                serverCard.innerHTML = '<h4>' + server.name + '</h4><p>ID: ' + server.id + '</p><p class="latency">Resolving...</p>';
+                serversGrid.appendChild(serverCard);
+            });
+        }
+        
+        function initializeTimeline() {
+            const timeline = document.getElementById('latency-timeline');
+            if (!timeline) return;
+            
+            timeline.innerHTML = '';
+            
+            servers.forEach((server, index) => {
+                const timelineItem = document.createElement('div');
+                timelineItem.className = 'timeline-item';
+                timelineItem.innerHTML = '<div class="timeline-dot"></div><div><strong>' + server.name + '</strong>: <span class="latency-result">Testing...</span></div>';
+                timeline.appendChild(timelineItem);
+            });
+        }
+        
+        function animatePhase1() {
+            setTimeout(() => {
+                const configRequest = document.getElementById('config-request');
+                if (configRequest) {
+                    configRequest.classList.add('show');
+                }
+            }, 500);
+        }
+        
+        function animatePhase2() {
+            initializeServers();
+            
+            const serverCards = document.querySelectorAll('.server-card');
+            const progressBar = document.getElementById('dns-progress');
+            
+            let resolved = 0;
+            
+            serverCards.forEach((card, index) => {
+                setTimeout(() => {
+                    const latencyElement = card.querySelector('.latency');
+                    if (latencyElement) {
+                        latencyElement.textContent = 'Connected ✅';
+                        card.style.backgroundColor = 'rgba(72, 219, 251, 0.3)';
+                    }
+                    resolved++;
+                    if (progressBar) {
+                        progressBar.style.width = ((resolved / servers.length) * 100) + '%';
+                    }
+                }, index * 200);
+            });
+        }
+        
+        function animatePhase3() {
+            initializeTimeline();
+            
+            const timelineItems = document.querySelectorAll('.timeline-item');
+            
+            servers.forEach((server, index) => {
+                setTimeout(() => {
+                    if (timelineItems[index]) {
+                        const item = timelineItems[index];
+                        const latencyResult = item.querySelector('.latency-result');
+                        
+                        item.classList.add('active');
+                        if (latencyResult) {
+                            latencyResult.textContent = server.latency + 'ms';
+                        }
+                        
+                        if (server.selected) {
+                            item.style.backgroundColor = 'rgba(254, 202, 87, 0.3)';
+                            item.style.borderRadius = '10px';
+                            item.style.padding = '10px';
+                        }
+                    }
+                }, index * 300);
+            });
+            
+            setTimeout(() => {
+                const selectionResult = document.getElementById('selection-result');
+                if (selectionResult) {
+                    selectionResult.classList.add('show');
+                }
+            }, servers.length * 300 + 500);
+        }
+        
+        function animatePhase4() {
+            const stages = [
+                { name: 'Idle Latency Test', duration: 1000, metric: 'idle-latency', value: '7.08ms' },
+                { name: 'Download Speed Test', duration: 3000, metric: 'download-speed', value: '23.47 Mbps' },
+                { name: 'Upload Speed Test', duration: 2000, metric: 'upload-speed', value: '16.59 Mbps' },
+                { name: 'Quality Analysis', duration: 1000, metric: 'jitter', value: '2.85ms' }
+            ];
+            
+            const progressBar = document.getElementById('test-progress');
+            const statusElement = document.getElementById('test-status');
+            
+            let totalTime = 0;
+            
+            stages.forEach((stage, index) => {
+                setTimeout(() => {
+                    if (statusElement) {
+                        statusElement.textContent = stage.name;
+                    }
+                    
+                    // Animate progress
+                    let progress = 0;
+                    const progressInterval = setInterval(() => {
+                        progress += 100 / (stage.duration / 50);
+                        if (progressBar) {
+                            progressBar.style.width = Math.min(progress, 100) + '%';
+                        }
+                        
+                        if (progress >= 100) {
+                            clearInterval(progressInterval);
+                            const metricElement = document.getElementById(stage.metric);
+                            if (metricElement) {
+                                metricElement.textContent = stage.value;
+                            }
+                        }
+                    }, 50);
+                }, totalTime);
+                
+                totalTime += stage.duration;
+            });
+            
+            setTimeout(() => {
+                if (statusElement) {
+                    statusElement.textContent = 'All tests completed! 🎉';
+                }
+            }, totalTime);
+        }
+        
+        function animatePhase5() {
+            setTimeout(() => {
+                const resultsRequest = document.getElementById('results-request');
+                if (resultsRequest) {
+                    resultsRequest.classList.add('show');
+                }
+            }, 500);
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Ookla Speedtest Process Animation</h1>
+            <p>Interactive visualization of how speedtest.net works behind the scenes</p>
+        </div>
+        
+        <div class="controls">
+            <button class="btn" onclick="startAnimation()">▶️ Start Auto</button>
+            <button class="btn secondary" onclick="resetAnimation()">🔄 Reset</button>
+            <button class="btn secondary" onclick="toggleAutoplay()" id="autoplayBtn">⏸️ Pause Auto</button>
+        </div>
+        
+        <div class="controls" style="margin-top: 10px;">
+            <button class="btn secondary" onclick="previousPhase()" id="prevBtn">⬅️ Previous</button>
+            <button class="btn" onclick="nextPhase()" id="nextBtn">➡️ Next Phase</button>
+            <span style="margin: 0 20px; opacity: 0.8;">Phase <span id="phaseCounter">0</span> of 5</span>
+        </div>
+        
+        <!-- Phase 1: Configuration -->
+        <div class="phase-container phase-1 hidden" id="phase-1">
+            <div class="phase">
+                <div class="phase-title">
+                    <div class="phase-icon">🔧</div>
+                    <div>
+                        <h2>Phase 1: Initial Configuration</h2>
+                        <small>Getting test parameters and server list</small>
+                    </div>
+                </div>
+                
+                <div class="api-request" id="config-request">
+                    <strong>🌐 API Request:</strong> GET https://cli.speedtest.net/api/cli/config<br>
+                    <strong>📡 DNS:</strong> 104.17.147.22, 104.17.148.22 (Cloudflare CDN)<br>
+                    <strong>⏱️ Response Time:</strong> 382ms
+                </div>
+                
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div>Device ID</div>
+                        <div class="metric-value">✅</div>
+                        <small>Hardware fingerprint generated</small>
+                    </div>
+                    <div class="metric-card">
+                        <div>ISP Detected</div>
+                        <div class="metric-value">Telkomsel</div>
+                        <small>Based on IP geolocation</small>
+                    </div>
+                    <div class="metric-card">
+                        <div>Servers Found</div>
+                        <div class="metric-value">11</div>
+                        <small>Jakarta area servers</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Phase 2: Server Discovery -->
+        <div class="phase-container phase-2 hidden" id="phase-2">
+            <div class="phase">
+                <div class="phase-title">
+                    <div class="phase-icon">🔍</div>
+                    <div>
+                        <h2>Phase 2: Server Discovery & DNS Resolution</h2>
+                        <small>Resolving server hostnames to IP addresses</small>
+                    </div>
+                </div>
+                
+                <div class="network-diagram" id="servers-grid">
+                    <!-- Servers will be populated by JavaScript -->
+                </div>
+                
+                <div class="progress-bar">
+                    <div class="progress-fill" id="dns-progress"></div>
+                </div>
+                <p style="text-align: center;">DNS Resolution Progress</p>
+            </div>
+        </div>
+        
+        <!-- Phase 3: Server Selection -->
+        <div class="phase-container phase-3 hidden" id="phase-3">
+            <div class="phase">
+                <div class="phase-title">
+                    <div class="phase-icon">🎯</div>
+                    <div>
+                        <h2>Phase 3: Server Selection Process</h2>
+                        <small>Testing latency to find the best server</small>
+                    </div>
+                </div>
+                
+                <div class="timeline" id="latency-timeline">
+                    <!-- Timeline items will be populated by JavaScript -->
+                </div>
+                
+                <div class="api-request" id="selection-result">
+                    <strong>🏆 Winner Selected:</strong> Server 71028 (Telkomsel)<br>
+                    <strong>📍 Best Latency:</strong> 6.78ms<br>
+                    <strong>🎯 Reason:</strong> Direct ISP-to-ISP connection
+                </div>
+            </div>
+        </div>
+        
+        <!-- Phase 4: Speed Testing -->
+        <div class="phase-container phase-4 hidden" id="phase-4">
+            <div class="phase">
+                <div class="phase-title">
+                    <div class="phase-icon">⚡</div>
+                    <div>
+                        <h2>Phase 4: Speed Testing</h2>
+                        <small>Measuring download/upload speeds and quality</small>
+                    </div>
+                </div>
+                
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div>Idle Latency</div>
+                        <div class="metric-value" id="idle-latency">0ms</div>
+                        <small>Baseline connection quality</small>
+                    </div>
+                    <div class="metric-card">
+                        <div>Download Speed</div>
+                        <div class="metric-value" id="download-speed">0 Mbps</div>
+                        <small>Multi-threaded TCP test</small>
+                    </div>
+                    <div class="metric-card">
+                        <div>Upload Speed</div>
+                        <div class="metric-value" id="upload-speed">0 Mbps</div>
+                        <small>Server-enabled upload</small>
+                    </div>
+                    <div class="metric-card">
+                        <div>Jitter</div>
+                        <div class="metric-value" id="jitter">0ms</div>
+                        <small>Connection stability</small>
+                    </div>
+                </div>
+                
+                <div class="progress-bar">
+                    <div class="progress-fill" id="test-progress"></div>
+                </div>
+                <p style="text-align: center;" id="test-status">Preparing test...</p>
+            </div>
+        </div>
+        
+        <!-- Phase 5: Results Upload -->
+        <div class="phase-container phase-5 hidden" id="phase-5">
+            <div class="phase">
+                <div class="phase-title">
+                    <div class="phase-icon">📤</div>
+                    <div>
+                        <h2>Phase 5: Results Upload & Verification</h2>
+                        <small>Storing results on Ookla's servers</small>
+                    </div>
+                </div>
+                
+                <div class="api-request" id="results-request">
+                    <strong>🌐 API Request:</strong> POST https://results.speedtest.net/reports<br>
+                    <strong>📊 Data:</strong> Speed metrics, latency, server info<br>
+                    <strong>✅ Response:</strong> HTTP 200 OK - Results stored
+                </div>
+                
+                <div class="results-summary">
+                    <h3>🎉 Test Complete!</h3>
+                    <div class="speed-gauge">
+                        <div class="gauge-bg">
+                            <div class="gauge-center">
+                                <div style="font-size: 1.2rem; font-weight: bold;">23.47</div>
+                                <div style="font-size: 0.8rem;">Mbps Down</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="final-metrics">
+                        <div class="metric-card">
+                            <div>Download</div>
+                            <div class="metric-value">23.47 Mbps</div>
+                        </div>
+                        <div class="metric-card">
+                            <div>Upload</div>
+                            <div class="metric-value">16.59 Mbps</div>
+                        </div>
+                        <div class="metric-card">
+                            <div>Latency</div>
+                            <div class="metric-value">7.08ms</div>
+                        </div>
+                        <div class="metric-card">
+                            <div>Server</div>
+                            <div class="metric-value">Telkomsel</div>
+                        </div>
+                    </div>
+                    
+                    <p>🔗 <strong>Result URL:</strong> speedtest.net/result/c/7e77c37b...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add keyboard navigation
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'ArrowRight') {
+                    nextPhase();
+                } else if (e.key === 'ArrowLeft') {
+                    previousPhase();
+                } else if (e.key === 'Escape') {
+                    resetAnimation();
+                }
+            });
+            
+            // Initialize navigation buttons
+            updateNavigationButtons();
+        });
+    </script>
+</body>
+</html>
